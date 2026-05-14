@@ -1,4 +1,4 @@
-import { HandLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+import type { HandLandmarker } from "@mediapipe/tasks-vision";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameState, GestureDebugInfo, GestureEvent, PerformanceMode } from "../types";
@@ -33,11 +33,13 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
   onGestureRef.current = onGesture;
 
   useEffect(() => {
+    if (!enabled || landmarkerRef.current || isModelReady) return;
     let cancelled = false;
 
     async function loadModel() {
       try {
         setError(null);
+        const { HandLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
         const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
         const options = {
           baseOptions: {
@@ -76,6 +78,11 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
     loadModel();
     return () => {
       cancelled = true;
+    };
+  }, [enabled, isModelReady]);
+
+  useEffect(() => {
+    return () => {
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
     };
