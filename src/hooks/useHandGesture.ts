@@ -40,10 +40,11 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
       try {
         setError(null);
         const { HandLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
-        const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+        const assetBase = import.meta.env.BASE_URL;
+        const vision = await FilesetResolver.forVisionTasks(`${assetBase}mediapipe/wasm`);
         const options = {
           baseOptions: {
-            modelAssetPath: "/mediapipe/hand_landmarker.task"
+            modelAssetPath: `${assetBase}mediapipe/hand_landmarker.task`
           },
           runningMode: "VIDEO" as const,
           numHands: 1,
