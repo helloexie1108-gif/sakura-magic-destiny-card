@@ -165,6 +165,7 @@ export default function App() {
         onSwitch={camera.switchCamera}
         onTogglePreview={() => camera.setIsPreviewVisible(!camera.isPreviewVisible)}
         onRecalibrate={recalibrate}
+        onRetryModel={gesture.retryModel}
       />
 
       <DebugPanel

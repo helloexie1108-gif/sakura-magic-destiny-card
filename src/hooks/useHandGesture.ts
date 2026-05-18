@@ -22,6 +22,8 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
   const landmarkerRef = useRef<HandLandmarker | null>(null);
   const runtimeRef = useRef(createGestureRuntime());
   const timerRef = useRef<number | null>(null);
+  const loadTimeoutRef = useRef<number | null>(null);
+  const isLoadingModelRef = useRef(false);
   const onGestureRef = useRef(onGesture);
   const lastFrameAtRef = useRef(performance.now());
   const lastInferenceAtRef = useRef(0);
@@ -29,16 +31,24 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
   const [debugInfo, setDebugInfo] = useState<GestureDebugInfo>(emptyGestureDebug);
   const [isModelReady, setIsModelReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   onGestureRef.current = onGesture;
 
   useEffect(() => {
-    if (!enabled || landmarkerRef.current || isModelReady) return;
+    if (!enabled || landmarkerRef.current || isModelReady || isLoadingModelRef.current) return;
     let cancelled = false;
 
     async function loadModel() {
       try {
+        isLoadingModelRef.current = true;
         setError(null);
+        if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = window.setTimeout(() => {
+          if (cancelled || landmarkerRef.current) return;
+          isLoadingModelRef.current = false;
+          setError("手势模型加载较慢。请保持网络稳定，或点击“重试手势模型”重新唤醒。");
+        }, 14000);
         const { HandLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
         const assetBase = import.meta.env.BASE_URL;
         const vision = await FilesetResolver.forVisionTasks(`${assetBase}mediapipe/wasm`);
@@ -56,21 +66,26 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
         try {
           landmarker = await HandLandmarker.createFromOptions(vision, {
             ...options,
-            baseOptions: { ...options.baseOptions, delegate: "CPU" }
+            baseOptions: options.baseOptions
           });
         } catch {
           landmarker = await HandLandmarker.createFromOptions(vision, {
             ...options,
-            baseOptions: options.baseOptions
+            baseOptions: { ...options.baseOptions, delegate: "CPU" }
           });
         }
         if (!cancelled) {
+          if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
+          isLoadingModelRef.current = false;
           landmarkerRef.current = landmarker;
           setIsModelReady(true);
+          setError(null);
           setDebugInfo((info) => ({ ...info, modelReady: true }));
         }
       } catch (modelError) {
         if (!cancelled) {
+          if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
+          isLoadingModelRef.current = false;
           setError(modelError instanceof Error ? modelError.message : "手势模型加载失败，请刷新页面后重试。");
         }
       }
@@ -79,8 +94,9 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
     loadModel();
     return () => {
       cancelled = true;
+      if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
     };
-  }, [enabled, isModelReady]);
+  }, [enabled, isModelReady, loadAttempt]);
 
   useEffect(() => {
     return () => {
@@ -168,5 +184,16 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
     setDebugInfo((info) => ({ ...emptyGestureDebug, modelReady: info.modelReady, videoSize: info.videoSize }));
   }, []);
 
-  return { debugInfo, isModelReady, error, recalibrate };
+  const retryModel = useCallback(() => {
+    if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
+    isLoadingModelRef.current = false;
+    landmarkerRef.current?.close();
+    landmarkerRef.current = null;
+    setIsModelReady(false);
+    setError(null);
+    setDebugInfo((info) => ({ ...info, modelReady: false, detectorRunning: false }));
+    setLoadAttempt((attempt) => attempt + 1);
+  }, []);
+
+  return { debugInfo, isModelReady, error, recalibrate, retryModel };
 }

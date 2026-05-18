@@ -667,6 +667,17 @@ button:hover {
   line-height: 1.45;
 }
 
+.camera-panel__model-retry {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 8px;
+  border-color: rgba(255, 226, 177, 0.44);
+  border-radius: 10px;
+  color: #fff7ff;
+  background: linear-gradient(135deg, rgba(255, 166, 219, 0.32), rgba(96, 50, 142, 0.34));
+  box-shadow: 0 0 18px rgba(255, 204, 232, 0.2);
+}
+
 .debug-panel {
   position: absolute;
   z-index: 35;

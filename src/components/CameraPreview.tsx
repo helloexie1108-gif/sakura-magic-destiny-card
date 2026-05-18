@@ -18,6 +18,7 @@ interface CameraPreviewProps {
   onSwitch: (deviceId: string) => void;
   onTogglePreview: () => void;
   onRecalibrate: () => void;
+  onRetryModel: () => void;
 }
 
 export function CameraPreview({
@@ -35,9 +36,11 @@ export function CameraPreview({
   onStart,
   onSwitch,
   onTogglePreview,
-  onRecalibrate
+  onRecalibrate,
+  onRetryModel
 }: CameraPreviewProps) {
   const showPreview = debugMode && isPreviewVisible;
+  const showModelRetry = Boolean(modelError) && !isModelReady && isReady;
   return (
     <aside className={`camera-panel ${showPreview ? "" : "camera-panel--hidden-preview"} ${debugMode ? "camera-panel--debug" : ""}`}>
       <div className="camera-panel__video-wrap">
@@ -80,12 +83,17 @@ export function CameraPreview({
         )}
       </div>}
       {(error || modelError) && <p className="camera-panel__error">{error || modelError}</p>}
+      {showModelRetry && (
+        <button type="button" className="camera-panel__model-retry" onClick={onRetryModel}>
+          重试手势模型
+        </button>
+      )}
       {permissionState === "denied" && (
         <p className="camera-panel__hint">
           当前站点权限状态是 denied。请检查地址栏站点设置里 localhost:5174 的摄像头权限；如果当前是内置浏览器，请用 Chrome/Safari 直接打开同一地址。
         </p>
       )}
-      {!isModelReady && <p className="camera-panel__hint">手势模型加载中...</p>}
+      {!isModelReady && !modelError && <p className="camera-panel__hint">手势模型加载中...</p>}
       {isModelReady && isReady && !gesture.detectorRunning && <p className="camera-panel__hint">等待视频帧进入识别...</p>}
     </aside>
   );
