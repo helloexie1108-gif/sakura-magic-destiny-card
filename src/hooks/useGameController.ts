@@ -9,6 +9,7 @@ export function useGameController() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lastAction, setLastAction] = useState<GameAction | null>(null);
   const [ritualCards, setRitualCards] = useState<DestinyCard[]>([]);
+  const [lockedCard, setLockedCard] = useState<DestinyCard | null>(null);
   const [drawnCount, setDrawnCount] = useState(0);
   const [revealedCount, setRevealedCount] = useState(0);
   const [isDebugMode, setIsDebugMode] = useState(false);
@@ -16,8 +17,7 @@ export function useGameController() {
   const phaseTimersRef = useRef<number[]>([]);
   const drawingRef = useRef(false);
 
-  const currentCard = cards[currentIndex];
-  const lockedCard = ritualCards[ritualCards.length - 1] || null;
+  const currentCard = cards[currentIndex] ?? cards[0] ?? destinyCards[0];
 
   const canSelect = gameState === "CAMERA_READY" || gameState === "SHUFFLING" || gameState === "SELECTING";
   const canConfirm = gameState === "SELECTING" || gameState === "CAMERA_READY";
@@ -47,6 +47,17 @@ export function useGameController() {
     setGameState((state) => (state === "CAMERA_READY" ? "SELECTING" : state));
   }, [cards.length]);
 
+  const confirmCardAtIndex = useCallback((index: number) => {
+    if (!canConfirm || drawingRef.current || cards.length === 0) return;
+    const targetIndex = wrapIndex(index, cards.length);
+    const targetCard = cards[targetIndex];
+    if (!targetCard || ritualCards.some((card) => card.id === targetCard.id)) return;
+    setCurrentIndex(targetIndex);
+    setLockedCard(targetCard);
+    setGameState("LOCKED");
+    setLastAction("CONFIRM_CARD");
+  }, [canConfirm, cards, ritualCards]);
+
   const dispatch = useCallback(
     (action: GameAction) => {
       setLastAction(action);
@@ -55,8 +66,10 @@ export function useGameController() {
       if (drawingRef.current && action !== "RESET_GAME") return;
 
       if (action === "SHUFFLE_CARDS" && (gameState === "CAMERA_READY" || gameState === "SELECTING")) {
-        setCards(createDestinySequence(destinyCards));
-        setCurrentIndex((index) => wrapIndex(index + 7 + Math.floor(Math.random() * 11), cards.length));
+        const selectedIds = new Set(ritualCards.map((card) => card.id));
+        const nextCards = createDestinySequence(destinyCards).filter((card) => !selectedIds.has(card.id));
+        setCards(nextCards);
+        setCurrentIndex((index) => wrapIndex(index + 7 + Math.floor(Math.random() * 11), nextCards.length));
         setGameState("SHUFFLING");
         const timer = window.setTimeout(() => setGameState("SELECTING"), 1200);
         phaseTimersRef.current.push(timer);
@@ -72,6 +85,7 @@ export function useGameController() {
           setCards(nextCards);
           setCurrentIndex(Math.floor(Math.random() * nextCards.length));
           setRitualCards([]);
+          setLockedCard(null);
           setDrawnCount(0);
           setRevealedCount(0);
           setGameState("SELECTING");
@@ -92,14 +106,19 @@ export function useGameController() {
       }
 
       if (action === "CONFIRM_CARD" && canConfirm) {
+        if (!currentCard || ritualCards.some((card) => card.id === currentCard.id)) return;
+        setLockedCard(currentCard);
         setGameState("LOCKED");
         return;
       }
 
       if (action === "FLIP_CARD" && canFlip) {
+        const cardToDraw = lockedCard ?? currentCard;
+        if (!cardToDraw || ritualCards.some((card) => card.id === cardToDraw.id)) return;
         setRitualCards((selectedCards) => {
           if (selectedCards.length >= 3) return selectedCards;
-          const nextCards = [...selectedCards, currentCard];
+          if (selectedCards.some((card) => card.id === cardToDraw.id)) return selectedCards;
+          const nextCards = [...selectedCards, cardToDraw];
           setRevealedCount(0);
           setGameState("DRAWING");
           drawingRef.current = true;
@@ -111,14 +130,21 @@ export function useGameController() {
 
           if (nextCards.length < 3) {
             const timer = window.setTimeout(() => {
-              setCurrentIndex((index) => wrapIndex(index + 1 + Math.floor(Math.random() * 5), cards.length));
+              setCards((remainingCards) => {
+                const updatedCards = remainingCards.filter((card) => card.id !== cardToDraw.id);
+                setCurrentIndex((index) => wrapIndex(index + 1 + Math.floor(Math.random() * 5), updatedCards.length || 1));
+                return updatedCards;
+              });
+              setLockedCard(null);
               drawingRef.current = false;
               setGameState("SELECTING");
             }, 1120);
             phaseTimersRef.current.push(timer);
           } else {
             revealTimerRef.current = window.setTimeout(() => {
+              setCards((remainingCards) => remainingCards.filter((card) => card.id !== cardToDraw.id));
               setRevealedCount(3);
+              setLockedCard(null);
               drawingRef.current = false;
               setGameState("RESULT");
             }, 1180);
@@ -129,7 +155,7 @@ export function useGameController() {
         return;
       }
     },
-    [canConfirm, canFlip, canSelect, cards.length, clearTimers, currentCard]
+    [canConfirm, canFlip, canSelect, cards.length, clearTimers, currentCard, gameState, lockedCard, ritualCards]
   );
 
   const neighbors = useMemo(
@@ -154,6 +180,7 @@ export function useGameController() {
     setCameraReady,
     setHandDetected,
     focusCard,
+    confirmCardAtIndex,
     dispatch,
     neighbors,
     totalCards: cards.length,

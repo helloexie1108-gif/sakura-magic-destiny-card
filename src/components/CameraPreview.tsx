@@ -108,9 +108,9 @@ function getGestureBadgeText(gesture: GestureDebugInfo, isReady: boolean) {
     hand_detected: "感应中",
     swipe_left: "左滑感应中",
     swipe_right: "右滑感应中",
-    pinch: "星牌锁定中",
+    pinch: "正在锁定这张牌",
     open_palm: "星光展开中",
-    circle: "牌阵重组中",
+    circle: "魔法感应中",
     hold: "星牌充能中",
     heart_reserved: "心愿感应中"
   };

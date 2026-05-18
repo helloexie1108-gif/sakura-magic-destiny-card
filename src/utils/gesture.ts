@@ -132,16 +132,7 @@ export function analyzeGesture(runtime: GestureRuntime, sample: GestureSample, f
       }
     }
   } else if (gameState === "SELECTING" || gameState === "CAMERA_READY") {
-    if (circle.detected || circle.angleDeg > 120) {
-      candidateGesture = "circle";
-      confidence = Math.min(0.9, 0.45 + circle.angleDeg / 360);
-      if (canAct && circle.detected) {
-        gesture = "circle";
-        action = "SHUFFLE_CARDS";
-        confidence = 0.88;
-        runtime.circleStartedAt = sample.timestamp;
-      }
-    } else if (pinchCandidate || pinchConfirm) {
+    if (pinchCandidate || pinchConfirm) {
       candidateGesture = "pinch";
       confidence = pinchConfirm ? 0.88 : 0.62;
       if (canAct && runtime.pinchArmed && runtime.pinchStartedAt && sample.timestamp - runtime.pinchStartedAt >= 180) {
@@ -149,6 +140,15 @@ export function analyzeGesture(runtime: GestureRuntime, sample: GestureSample, f
         action = "CONFIRM_CARD";
         confidence = 0.92;
         runtime.pinchArmed = false;
+      }
+    } else if (circle.detected || circle.angleDeg > 120) {
+      candidateGesture = "circle";
+      confidence = Math.min(0.9, 0.45 + circle.angleDeg / 360);
+      if (canAct && circle.detected) {
+        gesture = "circle";
+        action = "SHUFFLE_CARDS";
+        confidence = 0.88;
+        runtime.circleStartedAt = sample.timestamp;
       }
     } else if (swipe.candidate) {
       candidateGesture = swipe.dx < 0 ? "swipe_left" : "swipe_right";

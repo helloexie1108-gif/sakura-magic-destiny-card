@@ -1255,6 +1255,31 @@ button:hover {
   filter: drop-shadow(0 0 22px rgba(255, 205, 237, 0.46)) drop-shadow(0 0 14px rgba(255, 230, 166, 0.5));
 }
 
+.deck__arc-card.is-sensing-card {
+  z-index: 120 !important;
+}
+
+.deck__arc-card.is-sensing-card .mini-card-back,
+.deck__arc-card.is-sensing-card .card-view {
+  border-color: rgba(255, 234, 174, 0.88);
+  box-shadow:
+    0 0 22px rgba(255, 226, 177, 0.44),
+    0 0 32px rgba(255, 175, 223, 0.26);
+}
+
+.deck__arc-card.is-sensing-card::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 22px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 22% 20%, rgba(255, 255, 255, 0.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 28%, rgba(255, 232, 168, 0.86) 0 2px, transparent 3px),
+    radial-gradient(circle at 52% 86%, rgba(255, 182, 225, 0.86) 0 2px, transparent 3px);
+  animation: orbitParticles 1.15s linear infinite;
+}
+
 .deck__energy-ring {
   position: absolute;
   inset: -14px;

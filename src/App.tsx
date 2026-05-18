@@ -131,7 +131,7 @@ export default function App() {
           candidateGesture={gesture.debugInfo.candidateGesture}
           lastAction={game.lastAction}
           onFocusIndex={game.focusCard}
-          onLongSelect={() => game.dispatch("CONFIRM_CARD")}
+          onLongSelect={game.confirmCardAtIndex}
         />
         <DrawSlots
           cards={game.ritualCards}

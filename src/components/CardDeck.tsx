@@ -17,13 +17,13 @@ interface CardDeckProps {
   candidateGesture: GestureName;
   lastAction: GameAction | null;
   onFocusIndex: (index: number) => void;
-  onLongSelect: () => void;
+  onLongSelect: (index: number) => void;
 }
 
 const RING_RADIUS = 560;
 const DRAG_SENSITIVITY = 0.22;
 const INERTIA = 0.92;
-const LONG_PRESS_MS = 1400;
+const LONG_PRESS_MS = 460;
 
 export function CardDeck({
   currentCard,
@@ -46,12 +46,14 @@ export function CardDeck({
   const [rotation, setRotation] = useState(-currentIndex * step);
   const [dragging, setDragging] = useState(false);
   const [pressing, setPressing] = useState(false);
+  const [sensingIndex, setSensingIndex] = useState<number | null>(null);
   const [switchDirection, setSwitchDirection] = useState<"left" | "right" | null>(null);
   const velocityRef = useRef(0);
   const dragRef = useRef({ x: 0, rotation: 0, moved: false });
   const pressTimerRef = useRef<number | null>(null);
   const inertiaTimerRef = useRef<number | null>(null);
   const longPressDoneRef = useRef(false);
+  const cardRefs = useRef(new Map<number, HTMLDivElement>());
 
   const ringCards = useMemo(() => cards.map((card, index) => ({ card, index })), [cards]);
 
@@ -79,10 +81,46 @@ export function CardDeck({
     setRotation(-nextIndex * step);
   };
 
-  const clearLongPress = () => {
+  const clearLongPress = (clearSensing = true) => {
     if (pressTimerRef.current) window.clearTimeout(pressTimerRef.current);
     pressTimerRef.current = null;
-    setPressing(false);
+    if (clearSensing) {
+      setPressing(false);
+      setSensingIndex(null);
+    }
+  };
+
+  const armLongPress = (index: number) => {
+    if (pressTimerRef.current) window.clearTimeout(pressTimerRef.current);
+    setPressing(true);
+    setSensingIndex(index);
+    pressTimerRef.current = window.setTimeout(() => {
+      if (!dragRef.current.moved && canInteract) {
+        longPressDoneRef.current = true;
+        setPressing(false);
+        onLongSelect(index);
+      }
+    }, LONG_PRESS_MS);
+  };
+
+  const findNearestCardIndex = (clientX: number, clientY: number) => {
+    let nearestIndex: number | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    let nearestThreshold = 0;
+    cardRefs.current.forEach((node, index) => {
+      const rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.hypot(clientX - centerX, clientY - centerY);
+      const threshold = Math.max(window.innerWidth <= 900 ? 150 : 120, Math.max(rect.width, rect.height) * 1.2);
+      if (distance < nearestDistance) {
+        nearestIndex = index;
+        nearestDistance = distance;
+        nearestThreshold = threshold;
+      }
+    });
+    return nearestIndex !== null && nearestDistance <= nearestThreshold ? nearestIndex : null;
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLElement>) => {
@@ -93,23 +131,21 @@ export function CardDeck({
     velocityRef.current = 0;
     longPressDoneRef.current = false;
     setDragging(true);
-    setPressing(true);
-    pressTimerRef.current = window.setTimeout(() => {
-      if (!dragRef.current.moved && canInteract) {
-        longPressDoneRef.current = true;
-        setPressing(false);
-        onLongSelect();
-      }
-    }, LONG_PRESS_MS);
+    armLongPress(findNearestCardIndex(event.clientX, event.clientY) ?? currentIndex);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
     if (!dragging) return;
     const dx = event.clientX - dragRef.current.x;
-    if (Math.abs(dx) > 6) {
+    if (!dragRef.current.moved) {
+      const nearestIndex = findNearestCardIndex(event.clientX, event.clientY);
+      if (nearestIndex !== null && nearestIndex !== sensingIndex) armLongPress(nearestIndex);
+    }
+    if (Math.abs(dx) > 18) {
       dragRef.current.moved = true;
       clearLongPress();
     }
+    if (!dragRef.current.moved) return;
     const nextRotation = dragRef.current.rotation + dx * DRAG_SENSITIVITY;
     velocityRef.current = dx * DRAG_SENSITIVITY * 0.12;
     setRotation(nextRotation);
@@ -137,7 +173,7 @@ export function CardDeck({
 
   return (
     <section
-      className={`deck deck--${gameState.toLowerCase()} ${dragging ? "is-dragging" : ""} ${pressing ? "is-long-pressing" : ""} ${isLocked && !hideDeck ? "is-locked" : ""} ${switchDirection ? `is-switching-${switchDirection}` : ""} ${candidateGesture === "swipe_left" ? "is-gesture-left" : ""} ${candidateGesture === "swipe_right" ? "is-gesture-right" : ""} ${candidateGesture === "circle" ? "is-circling" : ""} ${candidateGesture === "pinch" ? "is-pinching" : ""} ${candidateGesture === "open_palm" ? "is-opening" : ""}`}
+      className={`deck deck--${gameState.toLowerCase()} ${dragging ? "is-dragging" : ""} ${pressing ? "is-long-pressing" : ""} ${sensingIndex !== null ? "is-sensing" : ""} ${isLocked && !hideDeck ? "is-locked" : ""} ${switchDirection ? `is-switching-${switchDirection}` : ""} ${candidateGesture === "swipe_left" ? "is-gesture-left" : ""} ${candidateGesture === "swipe_right" ? "is-gesture-right" : ""} ${candidateGesture === "circle" ? "is-circling" : ""} ${candidateGesture === "pinch" ? "is-pinching" : ""} ${candidateGesture === "open_palm" ? "is-opening" : ""}`}
       style={{ "--gesture-drag": `${gestureDragOffset}px`, "--gesture-tilt": `${gestureDragOffset * 0.08}deg` } as CSSProperties}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -153,6 +189,7 @@ export function CardDeck({
           const visibleOffset = Math.max(-13, Math.min(13, offset));
           const frontFactor = 1 - Math.min(1, Math.abs(visibleOffset) / 14);
           const isCenter = index === currentIndex;
+          const isSensing = sensingIndex === index;
           const isInFrontArc = Math.abs(offset) <= 13;
           const opacity = isCenter ? 1 : isInFrontArc ? 0.35 + frontFactor * 0.48 : 0.08;
           const scale = isCenter ? 1.08 : isInFrontArc ? 0.56 + frontFactor * 0.22 : 0.42;
@@ -171,7 +208,11 @@ export function CardDeck({
           return (
             <div
               key={card.id}
-              className={`deck__arc-card ${isCenter ? "is-center" : ""} ${directionLift ? "is-direction-preview" : ""}`}
+              ref={(node) => {
+                if (node) cardRefs.current.set(index, node);
+                else cardRefs.current.delete(index);
+              }}
+              className={`deck__arc-card ${isCenter ? "is-center" : ""} ${isSensing ? "is-sensing-card" : ""} ${directionLift ? "is-direction-preview" : ""}`}
               style={
                 {
                   zIndex: Math.round(20 + frontFactor * 60) + (isCenter ? 80 : 0),
