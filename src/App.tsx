@@ -14,9 +14,11 @@ import type { GameAction, PerformanceMode } from "./types";
 
 export default function App() {
   const [performanceMode, setPerformanceMode] = useState<PerformanceMode>("low");
+  const [isTouchMode, setIsTouchMode] = useState(false);
   const camera = useCamera(performanceMode);
   const game = useGameController();
   const [progressFlashKey, setProgressFlashKey] = useState(0);
+  const isEmbeddedBrowser = detectEmbeddedBrowser();
 
   const handleGesture = useCallback(
     (event: { action?: GameAction }) => {
@@ -36,7 +38,7 @@ export default function App() {
 
   const gesture = useHandGesture({
     videoRef: camera.videoRef,
-    enabled: camera.isReady,
+    enabled: camera.isReady && !isTouchMode,
     gameState: game.gameState,
     performanceMode,
     onGesture: handleGesture
@@ -49,6 +51,13 @@ export default function App() {
   useEffect(() => {
     if (camera.isReady) game.setCameraReady();
   }, [camera.isReady, game]);
+
+  useEffect(() => {
+    if (gesture.error && !gesture.isModelReady) {
+      setIsTouchMode(true);
+      if (game.gameState === "CAMERA_READY") game.setHandDetected();
+    }
+  }, [game, gesture.error, gesture.isModelReady]);
 
   useEffect(() => {
     if (camera.isReady && gesture.debugInfo.handPresent && game.gameState === "CAMERA_READY") {
@@ -83,6 +92,11 @@ export default function App() {
     else await document.exitFullscreen?.();
   };
 
+  const retryGestureModel = () => {
+    setIsTouchMode(false);
+    gesture.retryModel();
+  };
+
   const activeRarity =
     game.gameState === "DRAWING" || game.gameState === "RESULT" || game.gameState === "REVEALING"
       ? game.lockedCard?.rarity || game.currentCard.rarity
@@ -92,6 +106,12 @@ export default function App() {
     <main className={`app app--${game.gameState.toLowerCase()} app--perf-${performanceMode} ${activeRarity === "hidden" ? "app--shake" : ""}`}>
       <EffectLayer rarity={activeRarity} gameState={game.gameState} performanceMode={performanceMode} />
       <FairyTrail gesture={gesture.debugInfo} lastAction={game.lastAction} />
+
+      {isEmbeddedBrowser && (
+        <div className="browser-tip">
+          当前浏览器可能限制摄像头。建议复制链接，用 Safari 或 Chrome 打开；也可以先用触控模式体验。
+        </div>
+      )}
 
       <header className="top-bar">
         <div>
@@ -160,12 +180,17 @@ export default function App() {
         gesture={gesture.debugInfo}
         modelError={gesture.error}
         isModelReady={gesture.isModelReady}
+        isTouchMode={isTouchMode}
         debugMode={game.isDebugMode}
         onStart={() => camera.startCamera()}
         onSwitch={camera.switchCamera}
         onTogglePreview={() => camera.setIsPreviewVisible(!camera.isPreviewVisible)}
         onRecalibrate={recalibrate}
-        onRetryModel={gesture.retryModel}
+        onRetryModel={retryGestureModel}
+        onUseTouchMode={() => {
+          setIsTouchMode(true);
+          if (game.gameState === "CAMERA_READY") game.setHandDetected();
+        }}
       />
 
       <DebugPanel
@@ -189,6 +214,11 @@ export default function App() {
       />
     </main>
   );
+}
+
+function detectEmbeddedBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  return /micromessenger|mqqbrowser|qq\/|weibo|pdd|bytedance|toutiao|lark|dingtalk|alipay|baiduboxapp/.test(ua);
 }
 
 function getStatusText(gameState: keyof typeof statusText, drawnCount: number) {

@@ -368,6 +368,25 @@ button:hover {
   gap: 8px;
 }
 
+.browser-tip {
+  position: absolute;
+  z-index: 32;
+  left: 50%;
+  top: max(86px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 230, 176, 0.42);
+  border-radius: 999px;
+  color: rgba(112, 49, 92, 0.9);
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: 0 12px 34px rgba(166, 72, 133, 0.16);
+  backdrop-filter: blur(14px);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .stage {
   position: relative;
   z-index: 5;
@@ -676,6 +695,11 @@ button:hover {
   color: #fff7ff;
   background: linear-gradient(135deg, rgba(255, 166, 219, 0.32), rgba(96, 50, 142, 0.34));
   box-shadow: 0 0 18px rgba(255, 204, 232, 0.2);
+}
+
+.camera-panel__model-retry--secondary {
+  color: rgba(88, 39, 87, 0.9);
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .debug-panel {
@@ -2165,6 +2189,100 @@ button:hover {
 
   .result__cards {
     gap: 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  .browser-tip {
+    top: max(76px, env(safe-area-inset-top));
+    width: calc(100vw - 24px);
+    padding: 8px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+  }
+
+  .top-bar {
+    top: max(16px, env(safe-area-inset-top));
+    left: 18px;
+    right: 18px;
+  }
+
+  .top-bar h1 {
+    max-width: 92vw;
+    font-size: clamp(20px, 6vw, 28px);
+    line-height: 1.18;
+  }
+
+  .app:not(.app--result) .stage {
+    transform: translateY(-34px);
+  }
+
+  .app:not(.app--result) .deck {
+    transform: translateY(-8px);
+    height: 50vh;
+  }
+
+  .app:not(.app--result) .draw-slots {
+    bottom: 132px;
+    grid-template-columns: repeat(3, 78px);
+    gap: 6px;
+  }
+
+  .draw-slot {
+    min-height: 112px;
+  }
+
+  .draw-slot__label {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .card-view--slot,
+  .draw-slot__empty {
+    width: 64px;
+  }
+
+  .gesture-help {
+    display: none;
+  }
+
+  .camera-panel:not(.camera-panel--debug) {
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    width: min(172px, calc(100vw - 24px));
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(128, 75, 140, 0.5);
+  }
+
+  .camera-panel:not(.camera-panel--debug) .camera-panel__video-wrap {
+    min-height: 58px;
+  }
+
+  .camera-panel:not(.camera-panel--debug) .camera-panel__privacy {
+    min-height: 58px;
+    font-size: 12px;
+  }
+
+  .camera-panel__badge {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+
+  .camera-panel__error,
+  .camera-panel__hint {
+    margin-top: 6px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .camera-panel__model-retry {
+    min-height: 30px;
+    margin-top: 6px;
+    font-size: 12px;
   }
 }
 
@@ -4952,4 +5070,99 @@ button:hover {
 @keyframes rareSoftHalo {
   0%, 100% { opacity: 0.48; transform: translate(-50%, -50%) scale(0.98); }
   50% { opacity: 0.82; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+@media (max-width: 700px) {
+  .browser-tip {
+    top: max(76px, env(safe-area-inset-top));
+    width: calc(100vw - 24px);
+    padding: 8px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+  }
+
+  .top-bar {
+    top: max(16px, env(safe-area-inset-top));
+    left: 18px;
+    right: 18px;
+  }
+
+  .top-bar h1 {
+    max-width: 92vw;
+    font-size: clamp(20px, 6vw, 28px);
+    line-height: 1.18;
+  }
+
+  .app:not(.app--result) .stage {
+    transform: translateY(-34px);
+  }
+
+  .app:not(.app--result) .deck {
+    transform: translateY(-8px);
+    height: 50vh;
+  }
+
+  .app:not(.app--result) .draw-slots {
+    bottom: 132px;
+    grid-template-columns: repeat(3, 78px);
+    gap: 6px;
+  }
+
+  .draw-slot {
+    min-height: 112px;
+  }
+
+  .draw-slot__label {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .card-view--slot,
+  .draw-slot__empty {
+    width: 64px;
+  }
+
+  .gesture-help,
+  .app:not(.app--result) .gesture-help {
+    display: none;
+  }
+
+  .camera-panel:not(.camera-panel--debug) {
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    width: min(172px, calc(100vw - 24px));
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(128, 75, 140, 0.5);
+  }
+
+  .camera-panel:not(.camera-panel--debug) .camera-panel__video-wrap {
+    min-height: 58px;
+  }
+
+  .camera-panel:not(.camera-panel--debug) .camera-panel__privacy {
+    min-height: 58px;
+    font-size: 12px;
+  }
+
+  .camera-panel__badge {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+
+  .camera-panel__error,
+  .camera-panel__hint {
+    margin-top: 6px;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .camera-panel__model-retry {
+    min-height: 30px;
+    margin-top: 6px;
+    font-size: 12px;
+  }
 }

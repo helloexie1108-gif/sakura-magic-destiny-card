@@ -13,12 +13,14 @@ interface CameraPreviewProps {
   gesture: GestureDebugInfo;
   modelError: string | null;
   isModelReady: boolean;
+  isTouchMode: boolean;
   debugMode: boolean;
   onStart: () => void;
   onSwitch: (deviceId: string) => void;
   onTogglePreview: () => void;
   onRecalibrate: () => void;
   onRetryModel: () => void;
+  onUseTouchMode: () => void;
 }
 
 export function CameraPreview({
@@ -32,17 +34,19 @@ export function CameraPreview({
   gesture,
   modelError,
   isModelReady,
+  isTouchMode,
   debugMode,
   onStart,
   onSwitch,
   onTogglePreview,
   onRecalibrate,
-  onRetryModel
+  onRetryModel,
+  onUseTouchMode
 }: CameraPreviewProps) {
   const showPreview = debugMode && isPreviewVisible;
-  const showModelRetry = Boolean(modelError) && !isModelReady && isReady;
+  const showModelRetry = Boolean(modelError) && !isModelReady && isReady && !isTouchMode;
   return (
-    <aside className={`camera-panel ${showPreview ? "" : "camera-panel--hidden-preview"} ${debugMode ? "camera-panel--debug" : ""}`}>
+    <aside className={`camera-panel ${showPreview ? "" : "camera-panel--hidden-preview"} ${debugMode ? "camera-panel--debug" : ""} ${isTouchMode ? "camera-panel--touch-mode" : ""}`}>
       <div className="camera-panel__video-wrap">
         <video ref={videoRef} className="camera-panel__video" playsInline muted />
         {!isReady && (
@@ -51,14 +55,14 @@ export function CameraPreview({
             {error ? "重新请求摄像头" : "启动摄像头"}
           </button>
         )}
-        {!showPreview && <div className="camera-panel__privacy">魔法感应运行中</div>}
+        {!showPreview && <div className="camera-panel__privacy">{isTouchMode ? "触控星光模式" : "魔法感应运行中"}</div>}
         {error && (
           <div className="camera-panel__privacy camera-panel__privacy--error">
             {permissionState === "denied" ? "摄像头权限被拒绝" : "摄像头未启动"}
           </div>
         )}
         <div className={`camera-panel__badge ${gesture.handPresent ? "is-active" : ""}`}>
-          {getGestureBadgeText(gesture, isReady)}
+          {isTouchMode ? "滑动/长按即可抽牌" : getGestureBadgeText(gesture, isReady)}
         </div>
       </div>
 
@@ -88,12 +92,20 @@ export function CameraPreview({
           重试手势模型
         </button>
       )}
+      {!isModelReady && !isTouchMode && isReady && (
+        <button type="button" className="camera-panel__model-retry camera-panel__model-retry--secondary" onClick={onUseTouchMode}>
+          先用触控体验
+        </button>
+      )}
+      {isTouchMode && (
+        <p className="camera-panel__hint">手势识别在后台可重试；当前可直接滑动、长按、点击完成抽牌。</p>
+      )}
       {permissionState === "denied" && (
         <p className="camera-panel__hint">
           当前站点权限状态是 denied。请检查地址栏站点设置里 localhost:5174 的摄像头权限；如果当前是内置浏览器，请用 Chrome/Safari 直接打开同一地址。
         </p>
       )}
-      {!isModelReady && !modelError && <p className="camera-panel__hint">手势模型加载中...</p>}
+      {!isModelReady && !modelError && !isTouchMode && <p className="camera-panel__hint">手势模型后台加载中，不影响触控体验...</p>}
       {isModelReady && isReady && !gesture.detectorRunning && <p className="camera-panel__hint">等待视频帧进入识别...</p>}
     </aside>
   );
