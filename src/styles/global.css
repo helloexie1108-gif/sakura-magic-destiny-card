@@ -2213,6 +2213,12 @@ button:hover {
     line-height: 1.18;
   }
 
+  .magic-progress {
+    top: max(118px, calc(env(safe-area-inset-top) + 118px));
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
   .app:not(.app--result) .stage {
     transform: translateY(-34px);
   }

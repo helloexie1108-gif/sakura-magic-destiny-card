@@ -44,7 +44,10 @@ export function CameraPreview({
   onUseTouchMode
 }: CameraPreviewProps) {
   const showPreview = debugMode && isPreviewVisible;
-  const showModelRetry = Boolean(modelError) && !isModelReady && isReady && !isTouchMode;
+  const showModelRetry = Boolean(modelError) && !isModelReady && isReady;
+  const modelErrorText = debugMode
+    ? modelError
+    : "手势识别在后台加载较慢，当前可直接滑动、长按、点击完成抽牌。";
   return (
     <aside className={`camera-panel ${showPreview ? "" : "camera-panel--hidden-preview"} ${debugMode ? "camera-panel--debug" : ""} ${isTouchMode ? "camera-panel--touch-mode" : ""}`}>
       <div className="camera-panel__video-wrap">
@@ -55,14 +58,14 @@ export function CameraPreview({
             {error ? "重新请求摄像头" : "启动摄像头"}
           </button>
         )}
-        {!showPreview && <div className="camera-panel__privacy">{isTouchMode ? "触控星光模式" : "魔法感应运行中"}</div>}
+        {!showPreview && <div className="camera-panel__privacy">{isTouchMode ? "手势+触控模式" : "魔法感应运行中"}</div>}
         {error && (
           <div className="camera-panel__privacy camera-panel__privacy--error">
             {permissionState === "denied" ? "摄像头权限被拒绝" : "摄像头未启动"}
           </div>
         )}
         <div className={`camera-panel__badge ${gesture.handPresent ? "is-active" : ""}`}>
-          {isTouchMode ? "滑动/长按即可抽牌" : getGestureBadgeText(gesture, isReady)}
+          {isTouchMode ? "滑动/长按/点击可抽牌" : getGestureBadgeText(gesture, isReady)}
         </div>
       </div>
 
@@ -86,7 +89,8 @@ export function CameraPreview({
           </select>
         )}
       </div>}
-      {(error || modelError) && <p className="camera-panel__error">{error || modelError}</p>}
+      {error && <p className="camera-panel__error">{error}</p>}
+      {modelError && <p className="camera-panel__error">{modelErrorText}</p>}
       {showModelRetry && (
         <button type="button" className="camera-panel__model-retry" onClick={onRetryModel}>
           重试手势模型
@@ -98,7 +102,7 @@ export function CameraPreview({
         </button>
       )}
       {isTouchMode && (
-        <p className="camera-panel__hint">手势识别在后台可重试；当前可直接滑动、长按、点击完成抽牌。</p>
+        <p className="camera-panel__hint">手势识别可重试；当前可直接滑动、长按、点击完成抽牌。</p>
       )}
       {permissionState === "denied" && (
         <p className="camera-panel__hint">

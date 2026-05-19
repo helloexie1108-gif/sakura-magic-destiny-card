@@ -18,6 +18,7 @@ interface CardDeckProps {
   lastAction: GameAction | null;
   onFocusIndex: (index: number) => void;
   onLongSelect: (index: number) => void;
+  onLockedActivate: () => void;
 }
 
 const RING_RADIUS = 560;
@@ -36,7 +37,8 @@ export function CardDeck({
   candidateGesture,
   lastAction,
   onFocusIndex,
-  onLongSelect
+  onLongSelect,
+  onLockedActivate
 }: CardDeckProps) {
   const isShuffling = gameState === "SHUFFLING";
   const isCenterRevealed = gameState === "DRAWING";
@@ -53,6 +55,7 @@ export function CardDeck({
   const pressTimerRef = useRef<number | null>(null);
   const inertiaTimerRef = useRef<number | null>(null);
   const longPressDoneRef = useRef(false);
+  const lockedClickReadyAtRef = useRef(0);
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
 
   const ringCards = useMemo(() => cards.map((card, index) => ({ card, index })), [cards]);
@@ -74,6 +77,10 @@ export function CardDeck({
       if (pressTimerRef.current) window.clearTimeout(pressTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (gameState === "LOCKED") lockedClickReadyAtRef.current = performance.now() + 360;
+  }, [gameState]);
 
   const snapToNearest = (value: number) => {
     const nextIndex = ((Math.round(-value / step) % totalCards) + totalCards) % totalCards;
@@ -171,6 +178,12 @@ export function CardDeck({
     }
   };
 
+  const handleClick = () => {
+    if (gameState !== "LOCKED") return;
+    if (performance.now() < lockedClickReadyAtRef.current) return;
+    onLockedActivate();
+  };
+
   return (
     <section
       className={`deck deck--${gameState.toLowerCase()} ${dragging ? "is-dragging" : ""} ${pressing ? "is-long-pressing" : ""} ${sensingIndex !== null ? "is-sensing" : ""} ${isLocked && !hideDeck ? "is-locked" : ""} ${switchDirection ? `is-switching-${switchDirection}` : ""} ${candidateGesture === "swipe_left" ? "is-gesture-left" : ""} ${candidateGesture === "swipe_right" ? "is-gesture-right" : ""} ${candidateGesture === "circle" ? "is-circling" : ""} ${candidateGesture === "pinch" ? "is-pinching" : ""} ${candidateGesture === "open_palm" ? "is-opening" : ""}`}
@@ -179,6 +192,7 @@ export function CardDeck({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      onClick={handleClick}
     >
       <div className="deck__halo" />
       {isShuffling && <div className="deck__shuffle-ring" aria-hidden="true" />}

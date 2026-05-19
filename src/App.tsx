@@ -19,6 +19,7 @@ export default function App() {
   const game = useGameController();
   const [progressFlashKey, setProgressFlashKey] = useState(0);
   const isEmbeddedBrowser = detectEmbeddedBrowser();
+  const [showBrowserTip, setShowBrowserTip] = useState(isEmbeddedBrowser);
 
   const handleGesture = useCallback(
     (event: { action?: GameAction }) => {
@@ -38,7 +39,7 @@ export default function App() {
 
   const gesture = useHandGesture({
     videoRef: camera.videoRef,
-    enabled: camera.isReady && !isTouchMode,
+    enabled: camera.isReady,
     gameState: game.gameState,
     performanceMode,
     onGesture: handleGesture
@@ -58,6 +59,12 @@ export default function App() {
       if (game.gameState === "CAMERA_READY") game.setHandDetected();
     }
   }, [game, gesture.error, gesture.isModelReady]);
+
+  useEffect(() => {
+    if (!showBrowserTip) return;
+    const timer = window.setTimeout(() => setShowBrowserTip(false), 4200);
+    return () => window.clearTimeout(timer);
+  }, [showBrowserTip]);
 
   useEffect(() => {
     if (camera.isReady && gesture.debugInfo.handPresent && game.gameState === "CAMERA_READY") {
@@ -107,16 +114,16 @@ export default function App() {
       <EffectLayer rarity={activeRarity} gameState={game.gameState} performanceMode={performanceMode} />
       <FairyTrail gesture={gesture.debugInfo} lastAction={game.lastAction} />
 
-      {isEmbeddedBrowser && (
+      {showBrowserTip && (
         <div className="browser-tip">
-          当前浏览器可能限制摄像头。建议复制链接，用 Safari 或 Chrome 打开；也可以先用触控模式体验。
+          当前浏览器可能限制摄像头，已支持触控兜底；建议用 Safari 或 Chrome 体验手势。
         </div>
       )}
 
       <header className="top-bar">
         <div>
           <p className="top-bar__eyebrow">樱花魔法命运牌</p>
-          <h1>{getStatusText(game.gameState, game.drawnCount)}</h1>
+          <h1>{getStatusText(game.gameState, game.drawnCount, isTouchMode)}</h1>
         </div>
         <div className="top-bar__actions">
           <button type="button" className="top-bar__debug" onClick={() => game.setIsDebugMode((value) => !value)}>
@@ -152,6 +159,7 @@ export default function App() {
           lastAction={game.lastAction}
           onFocusIndex={game.focusCard}
           onLongSelect={game.confirmCardAtIndex}
+          onLockedActivate={() => game.dispatch("FLIP_CARD")}
         />
         <DrawSlots
           cards={game.ritualCards}
@@ -221,10 +229,12 @@ function detectEmbeddedBrowser() {
   return /micromessenger|mqqbrowser|qq\/|weibo|pdd|bytedance|toutiao|lark|dingtalk|alipay|baiduboxapp/.test(ua);
 }
 
-function getStatusText(gameState: keyof typeof statusText, drawnCount: number) {
+function getStatusText(gameState: keyof typeof statusText, drawnCount: number, isTouchMode: boolean) {
   if (gameState === "SELECTING" && drawnCount === 1) return "第一张已归位，继续寻找下一张共鸣牌";
   if (gameState === "SELECTING" && drawnCount === 2) return "第二张已归位，最后一张正在等待你";
   if (gameState === "DRAWING" && drawnCount >= 3) return "三张卡牌已完成召唤，正在生成你的星光牌阵";
+  if (isTouchMode && gameState === "SELECTING") return "左右滑动，长按锁定星牌";
+  if (isTouchMode && gameState === "LOCKED") return "已锁定这张卡牌，点击卡牌完成召唤";
   return statusText[gameState];
 }
 
