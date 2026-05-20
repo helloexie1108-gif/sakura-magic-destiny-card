@@ -45,9 +45,7 @@ export function CameraPreview({
 }: CameraPreviewProps) {
   const showPreview = debugMode && isPreviewVisible;
   const showModelRetry = Boolean(modelError) && !isModelReady && isReady;
-  const modelErrorText = debugMode
-    ? modelError
-    : "手势识别在后台加载较慢，当前可直接滑动、长按、点击完成抽牌。";
+  const modelErrorText = debugMode ? modelError : "手势识别加载较慢，已启用触控兜底。";
   return (
     <aside className={`camera-panel ${showPreview ? "" : "camera-panel--hidden-preview"} ${debugMode ? "camera-panel--debug" : ""} ${isTouchMode ? "camera-panel--touch-mode" : ""}`}>
       <div className="camera-panel__video-wrap">
@@ -90,7 +88,7 @@ export function CameraPreview({
         )}
       </div>}
       {error && <p className="camera-panel__error">{error}</p>}
-      {modelError && <p className="camera-panel__error">{modelErrorText}</p>}
+      {modelError && <p className={`camera-panel__error ${debugMode ? "" : "camera-panel__error--friendly"}`}>{modelErrorText}</p>}
       {showModelRetry && (
         <button type="button" className="camera-panel__model-retry" onClick={onRetryModel}>
           重试手势模型

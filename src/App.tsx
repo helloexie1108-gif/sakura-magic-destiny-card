@@ -110,7 +110,7 @@ export default function App() {
       : "normal";
 
   return (
-    <main className={`app app--${game.gameState.toLowerCase()} app--perf-${performanceMode} ${activeRarity === "hidden" ? "app--shake" : ""}`}>
+    <main className={`app app--${game.gameState.toLowerCase()} app--perf-${performanceMode} ${isTouchMode ? "app--touch-mode" : ""} ${activeRarity === "hidden" ? "app--shake" : ""}`}>
       <EffectLayer rarity={activeRarity} gameState={game.gameState} performanceMode={performanceMode} />
       <FairyTrail gesture={gesture.debugInfo} lastAction={game.lastAction} />
 

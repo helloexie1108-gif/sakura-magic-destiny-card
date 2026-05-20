@@ -5080,42 +5080,58 @@ button:hover {
 
 @media (max-width: 700px) {
   .browser-tip {
-    top: max(76px, env(safe-area-inset-top));
-    width: calc(100vw - 24px);
-    padding: 8px 12px;
-    border-radius: 16px;
-    font-size: 11px;
+    left: auto;
+    right: 14px;
+    top: max(78px, env(safe-area-inset-top));
+    transform: none;
+    width: min(210px, calc(100vw - 28px));
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .top-bar {
-    top: max(16px, env(safe-area-inset-top));
+    top: max(18px, env(safe-area-inset-top));
     left: 18px;
-    right: 18px;
+    right: 72px;
   }
 
   .top-bar h1 {
-    max-width: 92vw;
-    font-size: clamp(20px, 6vw, 28px);
-    line-height: 1.18;
+    max-width: min(330px, 68vw);
+    font-size: clamp(18px, 5.4vw, 25px);
+    line-height: 1.16;
+  }
+
+  .magic-progress {
+    left: auto;
+    right: 20px;
+    top: max(82px, calc(env(safe-area-inset-top) + 82px));
+    transform: none;
+    min-width: 66px;
+    padding: 5px 10px;
+    font-size: 12px;
   }
 
   .app:not(.app--result) .stage {
-    transform: translateY(-34px);
+    transform: translateY(-18px);
   }
 
   .app:not(.app--result) .deck {
-    transform: translateY(-8px);
-    height: 50vh;
+    transform: translateY(4px);
+    width: 100vw;
+    height: 48vh;
   }
 
   .app:not(.app--result) .draw-slots {
-    bottom: 132px;
-    grid-template-columns: repeat(3, 78px);
+    left: 42%;
+    bottom: 144px;
+    grid-template-columns: repeat(3, 74px);
     gap: 6px;
   }
 
   .draw-slot {
-    min-height: 112px;
+    min-height: 104px;
   }
 
   .draw-slot__label {
@@ -5125,7 +5141,7 @@ button:hover {
 
   .card-view--slot,
   .draw-slot__empty {
-    width: 64px;
+    width: 60px;
   }
 
   .gesture-help,
@@ -5166,9 +5182,63 @@ button:hover {
     line-height: 1.35;
   }
 
+  .camera-panel__error--friendly {
+    color: rgba(255, 231, 245, 0.82);
+  }
+
   .camera-panel__model-retry {
     min-height: 30px;
     margin-top: 6px;
     font-size: 12px;
+  }
+
+  .result__content {
+    width: min(390px, 94vw);
+    height: min(86vh, 690px);
+    gap: 8px;
+    transform: translateY(-6px);
+  }
+
+  .result__kicker {
+    font-size: 17px;
+  }
+
+  .result__cards {
+    width: min(340px, 90vw);
+    gap: 8px;
+    transform: translateY(0);
+  }
+
+  .result-card {
+    width: 86px;
+  }
+
+  .result-card.is-final {
+    transform: scale(1.02);
+  }
+
+  .result__response {
+    width: min(360px, 92vw);
+    gap: 12px;
+  }
+
+  .result__copy {
+    max-height: 44vh;
+    padding: 18px 20px;
+  }
+
+  .result__copy h2 {
+    font-size: 22px;
+    line-height: 1.22;
+  }
+
+  .result__body {
+    gap: 7px;
+    font-size: 13px;
+  }
+
+  .result__reset {
+    min-height: 38px;
+    padding: 8px 30px;
   }
 }

@@ -24,6 +24,8 @@ interface CardDeckProps {
 const RING_RADIUS = 560;
 const DRAG_SENSITIVITY = 0.22;
 const INERTIA = 0.92;
+const TOUCH_DRAG_SENSITIVITY = 0.16;
+const TOUCH_INERTIA = 0.78;
 const LONG_PRESS_MS = 460;
 
 export function CardDeck({
@@ -51,7 +53,7 @@ export function CardDeck({
   const [sensingIndex, setSensingIndex] = useState<number | null>(null);
   const [switchDirection, setSwitchDirection] = useState<"left" | "right" | null>(null);
   const velocityRef = useRef(0);
-  const dragRef = useRef({ x: 0, rotation: 0, moved: false });
+  const dragRef = useRef({ x: 0, rotation: 0, moved: false, pointerType: "" });
   const pressTimerRef = useRef<number | null>(null);
   const inertiaTimerRef = useRef<number | null>(null);
   const longPressDoneRef = useRef(false);
@@ -134,7 +136,7 @@ export function CardDeck({
     if (!canInteract) return;
     if (inertiaTimerRef.current) window.clearInterval(inertiaTimerRef.current);
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { x: event.clientX, rotation, moved: false };
+    dragRef.current = { x: event.clientX, rotation, moved: false, pointerType: event.pointerType };
     velocityRef.current = 0;
     longPressDoneRef.current = false;
     setDragging(true);
@@ -148,13 +150,15 @@ export function CardDeck({
       const nearestIndex = findNearestCardIndex(event.clientX, event.clientY);
       if (nearestIndex !== null && nearestIndex !== sensingIndex) armLongPress(nearestIndex);
     }
-    if (Math.abs(dx) > 18) {
+    const isTouchPointer = dragRef.current.pointerType === "touch" || window.matchMedia("(pointer: coarse)").matches;
+    if (Math.abs(dx) > (isTouchPointer ? 12 : 18)) {
       dragRef.current.moved = true;
       clearLongPress();
     }
     if (!dragRef.current.moved) return;
-    const nextRotation = dragRef.current.rotation + dx * DRAG_SENSITIVITY;
-    velocityRef.current = dx * DRAG_SENSITIVITY * 0.12;
+    const sensitivity = isTouchPointer ? TOUCH_DRAG_SENSITIVITY : DRAG_SENSITIVITY;
+    const nextRotation = dragRef.current.rotation + dx * sensitivity;
+    velocityRef.current = dx * sensitivity * (isTouchPointer ? 0.08 : 0.12);
     setRotation(nextRotation);
   };
 
@@ -165,8 +169,9 @@ export function CardDeck({
     clearLongPress();
     if (!longPressDoneRef.current) {
       let projected = rotation;
+      const inertia = dragRef.current.pointerType === "touch" || window.matchMedia("(pointer: coarse)").matches ? TOUCH_INERTIA : INERTIA;
       inertiaTimerRef.current = window.setInterval(() => {
-        velocityRef.current *= INERTIA;
+        velocityRef.current *= inertia;
         projected += velocityRef.current;
         setRotation(projected);
         if (Math.abs(velocityRef.current) < 0.05) {
