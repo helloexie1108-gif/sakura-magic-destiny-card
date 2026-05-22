@@ -17,6 +17,7 @@ interface CardDeckProps {
   candidateGesture: GestureName;
   lastAction: GameAction | null;
   onFocusIndex: (index: number) => void;
+  onTouchStep?: (direction: "next" | "prev") => void;
   onLongSelect: (index: number) => void;
   onLockedActivate: () => void;
 }
@@ -39,6 +40,7 @@ export function CardDeck({
   candidateGesture,
   lastAction,
   onFocusIndex,
+  onTouchStep,
   onLongSelect,
   onLockedActivate
 }: CardDeckProps) {
@@ -167,9 +169,19 @@ export function CardDeck({
     event.currentTarget.releasePointerCapture(event.pointerId);
     setDragging(false);
     clearLongPress();
+    const isTouchPointer = dragRef.current.pointerType === "touch" || window.matchMedia("(pointer: coarse)").matches;
+    const dx = event.clientX - dragRef.current.x;
+    if (isTouchPointer && dragRef.current.moved && Math.abs(dx) > 24) {
+      if (inertiaTimerRef.current) window.clearInterval(inertiaTimerRef.current);
+      inertiaTimerRef.current = null;
+      velocityRef.current = 0;
+      setRotation(-currentIndex * step);
+      onTouchStep?.(dx < 0 ? "next" : "prev");
+      return;
+    }
     if (!longPressDoneRef.current) {
       let projected = rotation;
-      const inertia = dragRef.current.pointerType === "touch" || window.matchMedia("(pointer: coarse)").matches ? TOUCH_INERTIA : INERTIA;
+      const inertia = isTouchPointer ? TOUCH_INERTIA : INERTIA;
       inertiaTimerRef.current = window.setInterval(() => {
         velocityRef.current *= inertia;
         projected += velocityRef.current;

@@ -158,6 +158,7 @@ export default function App() {
           candidateGesture={gesture.debugInfo.candidateGesture}
           lastAction={game.lastAction}
           onFocusIndex={game.focusCard}
+          onTouchStep={game.stepRandomCard}
           onLongSelect={game.confirmCardAtIndex}
           onLockedActivate={() => game.dispatch("FLIP_CARD")}
         />

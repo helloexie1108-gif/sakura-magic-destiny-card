@@ -88,7 +88,8 @@ export function CameraPreview({
         )}
       </div>}
       {error && <p className="camera-panel__error">{error}</p>}
-      {modelError && <p className={`camera-panel__error ${debugMode ? "" : "camera-panel__error--friendly"}`}>{modelErrorText}</p>}
+      {modelError && debugMode && <p className="camera-panel__error">{modelErrorText}</p>}
+      {modelError && !debugMode && <p className="camera-panel__hint camera-panel__hint--friendly">手势模型后台重试中，当前可直接滑动、长按、点击完成抽牌。</p>}
       {showModelRetry && (
         <button type="button" className="camera-panel__model-retry" onClick={onRetryModel}>
           重试手势模型

@@ -47,6 +47,15 @@ export function useGameController() {
     setGameState((state) => (state === "CAMERA_READY" ? "SELECTING" : state));
   }, [cards.length]);
 
+  const stepRandomCard = useCallback((direction: "next" | "prev") => {
+    if (!canSelect || drawingRef.current || cards.length <= 1) return;
+    const randomStep = Math.min(cards.length - 1, 1 + Math.floor(Math.random() * 4));
+    const signedStep = direction === "next" ? randomStep : -randomStep;
+    setLastAction(direction === "next" ? "NEXT_CARD" : "PREV_CARD");
+    setCurrentIndex((index) => wrapIndex(index + signedStep, cards.length));
+    setGameState("SELECTING");
+  }, [canSelect, cards.length]);
+
   const confirmCardAtIndex = useCallback((index: number) => {
     if (!canConfirm || drawingRef.current || cards.length === 0) return;
     const targetIndex = wrapIndex(index, cards.length);
@@ -180,6 +189,7 @@ export function useGameController() {
     setCameraReady,
     setHandDetected,
     focusCard,
+    stepRandomCard,
     confirmCardAtIndex,
     dispatch,
     neighbors,
