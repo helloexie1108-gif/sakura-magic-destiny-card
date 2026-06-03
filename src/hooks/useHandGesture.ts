@@ -46,33 +46,58 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
         if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
         loadTimeoutRef.current = window.setTimeout(() => {
           if (cancelled || landmarkerRef.current) return;
-          isLoadingModelRef.current = false;
-          setError("手势模型加载较慢。请保持网络稳定，或点击“重试手势模型”重新唤醒。");
-        }, 14000);
+          setError("手势模型加载较慢，正在后台切换备用线路。");
+        }, 6500);
         const { HandLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
-        const assetBase = import.meta.env.BASE_URL;
-        const vision = await FilesetResolver.forVisionTasks(`${assetBase}mediapipe/wasm`);
-        const options = {
-          baseOptions: {
+        const assetBase = withTrailingSlash(import.meta.env.BASE_URL || "/");
+        const modelSources = [
+          {
+            wasmBase: `${assetBase}mediapipe/wasm`,
             modelAssetPath: `${assetBase}mediapipe/hand_landmarker.task`
           },
-          runningMode: "VIDEO" as const,
-          numHands: 1,
-          minHandDetectionConfidence: 0.34,
-          minHandPresenceConfidence: 0.34,
-          minTrackingConfidence: 0.34
-        };
-        let landmarker: HandLandmarker;
-        try {
-          landmarker = await HandLandmarker.createFromOptions(vision, {
-            ...options,
-            baseOptions: options.baseOptions
-          });
-        } catch {
-          landmarker = await HandLandmarker.createFromOptions(vision, {
-            ...options,
-            baseOptions: { ...options.baseOptions, delegate: "CPU" }
-          });
+          {
+            wasmBase: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm",
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task"
+          }
+        ];
+
+        let landmarker: HandLandmarker | null = null;
+        let lastError: unknown = null;
+
+        for (const [index, source] of modelSources.entries()) {
+          if (cancelled) return;
+          try {
+            if (index > 0) setError("本地手势模型加载较慢，正在切换备用线路。");
+            const vision = await withTimeout(FilesetResolver.forVisionTasks(source.wasmBase), 9000, "手势运行库加载超时");
+            const options = {
+              baseOptions: {
+                modelAssetPath: source.modelAssetPath
+              },
+              runningMode: "VIDEO" as const,
+              numHands: 1,
+              minHandDetectionConfidence: 0.34,
+              minHandPresenceConfidence: 0.34,
+              minTrackingConfidence: 0.34
+            };
+            try {
+              landmarker = await withTimeout(HandLandmarker.createFromOptions(vision, {
+                ...options,
+                baseOptions: options.baseOptions
+              }), 12000, "手势模型初始化超时");
+            } catch {
+              landmarker = await withTimeout(HandLandmarker.createFromOptions(vision, {
+                ...options,
+                baseOptions: { ...options.baseOptions, delegate: "CPU" }
+              }), 12000, "手势模型 CPU 初始化超时");
+            }
+            break;
+          } catch (sourceError) {
+            lastError = sourceError;
+          }
+        }
+
+        if (!landmarker) {
+          throw lastError instanceof Error ? lastError : new Error("手势模型加载失败，请刷新页面后重试。");
         }
         if (!cancelled) {
           if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
@@ -86,7 +111,7 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
         if (!cancelled) {
           if (loadTimeoutRef.current) window.clearTimeout(loadTimeoutRef.current);
           isLoadingModelRef.current = false;
-          setError(modelError instanceof Error ? modelError.message : "手势模型加载失败，请刷新页面后重试。");
+          setError(modelError instanceof Error ? `手势模型加载失败：${modelError.message}` : "手势模型加载失败，请刷新页面后重试。");
         }
       }
     }
@@ -196,4 +221,24 @@ export function useHandGesture({ videoRef, enabled, gameState, performanceMode, 
   }, []);
 
   return { debugInfo, isModelReady, error, recalibrate, retryModel };
+}
+
+function withTrailingSlash(path: string) {
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
 }
