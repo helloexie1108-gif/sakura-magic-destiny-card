@@ -61,6 +61,12 @@ export default function App() {
   }, [game, gesture.error, gesture.isModelReady]);
 
   useEffect(() => {
+    if (camera.error || camera.permissionState === "denied") {
+      setIsTouchMode(true);
+    }
+  }, [camera.error, camera.permissionState]);
+
+  useEffect(() => {
     if (!showBrowserTip) return;
     const timer = window.setTimeout(() => setShowBrowserTip(false), 4200);
     return () => window.clearTimeout(timer);
@@ -234,6 +240,7 @@ function getStatusText(gameState: keyof typeof statusText, drawnCount: number, i
   if (gameState === "SELECTING" && drawnCount === 1) return "第一张已归位，继续寻找下一张共鸣牌";
   if (gameState === "SELECTING" && drawnCount === 2) return "第二张已归位，最后一张正在等待你";
   if (gameState === "DRAWING" && drawnCount >= 3) return "三张卡牌已完成召唤，正在生成你的星光牌阵";
+  if (isTouchMode && (gameState === "IDLE" || gameState === "CAMERA_READY")) return "左右滑动，长按锁定星牌";
   if (isTouchMode && gameState === "SELECTING") return "左右滑动，长按锁定星牌";
   if (isTouchMode && gameState === "LOCKED") return "已锁定这张卡牌，点击卡牌完成召唤";
   return statusText[gameState];

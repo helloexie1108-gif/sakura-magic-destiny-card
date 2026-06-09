@@ -19,8 +19,8 @@ export function useGameController() {
 
   const currentCard = cards[currentIndex] ?? cards[0] ?? destinyCards[0];
 
-  const canSelect = gameState === "CAMERA_READY" || gameState === "SHUFFLING" || gameState === "SELECTING";
-  const canConfirm = gameState === "SELECTING" || gameState === "CAMERA_READY";
+  const canSelect = gameState === "IDLE" || gameState === "CAMERA_READY" || gameState === "SHUFFLING" || gameState === "SELECTING";
+  const canConfirm = gameState === "IDLE" || gameState === "SELECTING" || gameState === "CAMERA_READY";
   const canFlip = gameState === "LOCKED";
 
   const clearTimers = useCallback(() => {
@@ -44,7 +44,7 @@ export function useGameController() {
 
   const focusCard = useCallback((index: number) => {
     setCurrentIndex(wrapIndex(index, cards.length));
-    setGameState((state) => (state === "CAMERA_READY" ? "SELECTING" : state));
+    setGameState((state) => (state === "IDLE" || state === "CAMERA_READY" ? "SELECTING" : state));
   }, [cards.length]);
 
   const stepRandomCard = useCallback((direction: "next" | "prev") => {
@@ -74,7 +74,7 @@ export function useGameController() {
       if (action === "RECALIBRATE_GESTURE") return;
       if (drawingRef.current && action !== "RESET_GAME") return;
 
-      if (action === "SHUFFLE_CARDS" && (gameState === "CAMERA_READY" || gameState === "SELECTING")) {
+      if (action === "SHUFFLE_CARDS" && (gameState === "IDLE" || gameState === "CAMERA_READY" || gameState === "SELECTING")) {
         const selectedIds = new Set(ritualCards.map((card) => card.id));
         const nextCards = createDestinySequence(destinyCards).filter((card) => !selectedIds.has(card.id));
         setCards(nextCards);

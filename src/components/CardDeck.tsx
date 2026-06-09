@@ -47,7 +47,7 @@ export function CardDeck({
   const isShuffling = gameState === "SHUFFLING";
   const isCenterRevealed = gameState === "DRAWING";
   const hideDeck = gameState === "REVEALING" || gameState === "RESULT";
-  const canInteract = gameState === "CAMERA_READY" || gameState === "SELECTING" || gameState === "SHUFFLING";
+  const canInteract = gameState === "IDLE" || gameState === "CAMERA_READY" || gameState === "SELECTING" || gameState === "SHUFFLING";
   const step = 360 / totalCards;
   const [rotation, setRotation] = useState(-currentIndex * step);
   const [dragging, setDragging] = useState(false);
